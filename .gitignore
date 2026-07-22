@@ -1,0 +1,36 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Local environment files (contains keys/passwords)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.local
+
+# Production build outputs
+dist/
+**/dist/
+build/
+out/
+
+# Log files
+*.log
+**/stderr.log
+**/stdout.log
+**/dev-err.log
+**/dev.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.claude/
+.vite/

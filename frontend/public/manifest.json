@@ -1,0 +1,26 @@
+{
+  "name": "AeroVision — Live Flight Intelligence",
+  "short_name": "AeroVision",
+  "description": "Real-time flight tracking, weather, crowd density, and airport intelligence for BLR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080c14",
+  "theme_color": "#3b9eff",
+  "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "categories": ["travel", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Live Flights", "url": "/flights", "description": "BLR departures & arrivals" },
+    { "name": "Weather",      "url": "/weather", "description": "Current BLR weather" },
+    { "name": "Currency",     "url": "/currency", "description": "INR forex converter" }
+  ]
+}

@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AeroVision — Live Flight Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --bg2: #0d1220;
+    --bg3: #111827;
+    --surface: #141c2e;
+    --surface2: #1a2540;
+    --border: rgba(99,179,255,0.12);
+    --border2: rgba(99,179,255,0.22);
+    --accent: #3b9eff;
+    --accent2: #63b3ff;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #e8f0fe;
+    --text2: #8899bb;
+    --text3: #4a5a7a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; overflow-x: hidden; }
+
+  /* ===== AUTH GATE ===== */
+  #authGate {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #authGate.hidden { display: none; }
+  .auth-wrap {
+    width: 100%; max-width: 440px; padding: 2rem;
+  }
+  .auth-logo-big {
+    font-family: var(--display); font-size: 32px; font-weight: 800;
+    text-align: center; margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+  }
+  .auth-logo-big span { color: var(--accent); }
+  .auth-tagline { text-align: center; color: var(--text2); font-size: 14px; margin-bottom: 2.5rem; }
+  .auth-card {
+    background: var(--surface); border: 0.5px solid var(--border2);
+    border-radius: 20px; padding: 2rem;
+  }
+  .auth-tabs { display: flex; background: var(--bg3); border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; }
+  .auth-tab { flex: 1; text-align: center; padding: 9px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all 0.2s; }
+  .auth-tab.active { background: var(--surface2); color: var(--text); }
+  .field { margin-bottom: 1rem; }
+  .field label { font-size: 11px; color: var(--text2); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .field input { width: 100%; padding: 11px 14px; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 10px; color: var(--text); font-size: 14px; font-family: var(--sans); outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: var(--accent); }
+  .auth-btn { width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); margin-top: 1rem; transition: opacity 0.2s; }
+  .auth-btn:hover { opacity: 0.85; }
+  .auth-divider { text-align: center; color: var(--text3); font-size: 12px; margin: 1.25rem 0; position: relative; }
+  .auth-divider::before, .auth-divider::after { content: ''; position: absolute; top: 50%; width: 35%; height: 0.5px; background: var(--border2); }
+  .auth-divider::before { left: 0; }
+  .auth-divider::after { right: 0; }
+  .guest-btn {
+    width: 100%; padding: 12px; background: transparent; color: var(--text2);
+    border: 0.5px solid var(--border2); border-radius: 10px; font-size: 13px;
+    font-weight: 500; cursor: pointer; font-family: var(--sans);
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .guest-btn:hover { border-color: var(--accent); color: var(--accent2); background: rgba(59,158,255,0.05); }
+  .social-login { display: flex; gap: 10px; margin-bottom: 0; }
+  .social-btn { flex: 1; padding: 10px; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 10px; cursor: pointer; font-size: 18px; transition: background 0.2s; text-align: center; font-weight: 700; color: var(--text2); }
+  .social-btn:hover { background: var(--surface2); }
+  .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 11px; color: var(--text3); }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,12,20,0.92); backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 60px;
+  }
+  .nav-brand { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .nav-brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 1.5rem; }
+  .nav-links a { color: var(--text2); text-decoration: none; font-size: 13px; font-weight: 500; letter-spacing: 0.02em; transition: color 0.2s; cursor: pointer; }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent2); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-bell { position: relative; cursor: pointer; width: 36px; height: 36px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s; }
+  .nav-bell:hover { background: var(--surface2); }
+  .badge { position: absolute; top: -3px; right: -3px; width: 16px; height: 16px; background: var(--red); border-radius: 50%; font-size: 9px; font-weight: 500; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); }
+  .user-chip { display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 20px; font-size: 12px; color: var(--text2); cursor: pointer; transition: all 0.2s; }
+  .user-chip:hover { border-color: var(--accent); color: var(--accent2); }
+  .user-chip .user-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+  /* SECTIONS */
+  #appShell { display: none; }
+  #appShell.visible { display: block; }
+  section { display: none; }
+  section.active { display: block; }
+
+  /* BACK BTN */
+  .page-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text2); font-size: 13px; cursor: pointer;
+    margin-bottom: 1.5rem; transition: color 0.2s;
+    background: none; border: none; font-family: var(--sans);
+    padding: 0;
+  }
+  .page-back:hover { color: var(--accent2); }
+
+  /* HOME */
+  #home { padding: 0; }
+  .hero { position: relative; min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 2rem 3rem; text-align: center; overflow: hidden; }
+  .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(59,158,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(59,158,255,0.04) 1px, transparent 1px); background-size: 48px 48px; }
+  .hero-glow { position: absolute; width: 600px; height: 300px; background: radial-gradient(ellipse, rgba(59,158,255,0.08) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -60%); pointer-events: none; }
+  .hero-tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; background: rgba(59,158,255,0.08); border: 0.5px solid rgba(59,158,255,0.25); padding: 5px 14px; border-radius: 20px; margin-bottom: 1.5rem; position: relative; }
+  .hero h1 { font-family: var(--display); font-size: clamp(36px, 5vw, 64px); font-weight: 800; letter-spacing: -2px; line-height: 1.05; position: relative; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--text2); font-size: 16px; font-weight: 300; margin-top: 1rem; max-width: 500px; position: relative; }
+  .search-bar { position: relative; width: 100%; max-width: 600px; margin: 2rem auto 0; }
+  .search-bar input { width: 100%; padding: 16px 56px 16px 20px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 14px; color: var(--text); font-size: 15px; font-family: var(--sans); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  .search-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,158,255,0.12); }
+  .search-bar input::placeholder { color: var(--text3); }
+  .search-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: var(--accent); border: none; border-radius: 10px; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: opacity 0.2s; }
+  .search-btn:hover { opacity: 0.85; }
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 10px; overflow: hidden; z-index: 50; display: none; }
+  .autocomplete-list.show { display: block; }
+  .ac-item { padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 13px; transition: background 0.15s; }
+  .ac-item:hover { background: rgba(59,158,255,0.1); }
+  .ac-item .ac-num { font-family: var(--mono); color: var(--accent2); }
+  .ac-item .ac-info { color: var(--text2); font-size: 12px; }
+  .quick-btns { display: flex; gap: 12px; margin-top: 1.5rem; flex-wrap: wrap; justify-content: center; position: relative; }
+  .qbtn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 10px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--sans); transition: background 0.2s, border-color 0.2s; }
+  .qbtn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent2); }
+  .qbtn .qi { font-size: 16px; }
+  .live-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 2.5rem 2rem; }
+  .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.blue::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .stat-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .stat-card.amber::before { background: linear-gradient(90deg, var(--amber), transparent); }
+  .stat-card.red::before { background: linear-gradient(90deg, var(--red), transparent); }
+  .stat-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); font-family: var(--mono); }
+  .stat-value { font-family: var(--display); font-size: 36px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
+  .stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .stat-card.blue .stat-value { color: var(--accent2); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.amber .stat-value { color: var(--amber); }
+  .stat-card.red .stat-value { color: var(--red); }
+
+  /* FIDS */
+  #fids { padding: 2rem; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .section-title { font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); padding: 4px; border-radius: 10px; }
+  .tab { padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all 0.2s; border: none; background: none; font-family: var(--sans); }
+  .tab.active { background: var(--accent); color: #fff; }
+  .fids-filters { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-select { background: var(--surface); border: 0.5px solid var(--border2); color: var(--text); border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: var(--sans); outline: none; cursor: pointer; }
+  .refresh-badge { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .pulse { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .fids-table { width: 100%; border-collapse: collapse; }
+  .fids-table thead tr { border-bottom: 0.5px solid var(--border2); }
+  .fids-table th { padding: 10px 14px; text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); font-weight: 400; }
+  .fids-table td { padding: 13px 14px; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+  .fids-table tr:hover td { background: rgba(59,158,255,0.04); }
+  .fids-table tr { cursor: pointer; transition: background 0.15s; }
+  .flight-num { font-family: var(--mono); font-weight: 500; color: var(--accent2); }
+  .airline-logo { display: inline-flex; align-items: center; gap: 8px; }
+  .al-icon { width: 28px; height: 28px; border-radius: 6px; background: var(--surface2); border: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--accent2); font-family: var(--mono); }
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; font-family: var(--mono); letter-spacing: 0.04em; }
+  .status-pill.ontime { background: rgba(34,197,94,0.12); color: var(--green); border: 0.5px solid rgba(34,197,94,0.25); }
+  .status-pill.delayed { background: rgba(245,158,11,0.12); color: var(--amber); border: 0.5px solid rgba(245,158,11,0.25); }
+  .status-pill.cancelled { background: rgba(239,68,68,0.12); color: var(--red); border: 0.5px solid rgba(239,68,68,0.25); }
+  .status-pill.boarding { background: rgba(59,158,255,0.12); color: var(--accent2); border: 0.5px solid rgba(59,158,255,0.3); }
+  .status-pill.landed { background: rgba(99,179,255,0.08); color: var(--text2); border: 0.5px solid var(--border2); }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* DETAIL */
+  #detail { padding: 2rem; }
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 13px; cursor: pointer; margin-bottom: 1.5rem; transition: color 0.2s; background: none; border: none; font-family: var(--sans); }
+  .back-btn:hover { color: var(--accent2); }
+  .detail-hero { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+  .detail-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--green)); }
+  .detail-route { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+  .route-city { text-align: center; }
+  .route-code { font-family: var(--display); font-size: 48px; font-weight: 800; letter-spacing: -2px; }
+  .route-name { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .route-line { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .route-plane { font-size: 24px; color: var(--accent2); }
+  .route-dash { width: 100%; height: 0.5px; background: linear-gradient(90deg, var(--border2), var(--accent), var(--border2)); }
+  .detail-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .meta-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+  .meta-value { font-size: 18px; font-weight: 600; font-family: var(--display); margin-top: 4px; }
+  .meta-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .detail-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .dc-title { font-size: 12px; font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 1rem; }
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 14px; padding-bottom: 1rem; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; gap: 0; width: 30px; }
+  .tl-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg2); flex-shrink: 0; }
+  .tl-dot.done { background: var(--green); }
+  .tl-dot.future { background: var(--surface2); border-color: var(--border2); }
+  .tl-line { flex: 1; width: 1px; background: var(--border2); margin-top: 2px; }
+  .tl-time { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+  .tl-label { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+  .tl-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .wx-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .wx-row:last-child { border: none; }
+  .wx-key { font-size: 12px; color: var(--text2); }
+  .wx-val { font-family: var(--mono); font-size: 13px; color: var(--text); }
+
+  /* ===== RADAR ===== */
+  #radar { padding: 2rem; }
+  .radar-wrapper { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 16px; overflow: hidden; }
+  .radar-toolbar { padding: 1rem 1.5rem; border-bottom: 0.5px solid var(--border2); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .radar-canvas-wrap { position: relative; width: 100%; }
+  #radarCanvas { display: block; width: 100%; height: 580px; background: #04090f; cursor: crosshair; }
+  .radar-overlay-chips { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  .radar-chip { background: rgba(4,9,15,0.88); border: 0.5px solid var(--border2); border-radius: 8px; padding: 6px 12px; font-family: var(--mono); font-size: 11px; color: var(--text2); }
+  /* Flight tooltip */
+  #flightTooltip {
+    position: absolute; display: none; z-index: 50;
+    background: var(--bg2); border: 0.5px solid var(--border2);
+    border-radius: 12px; padding: 14px; width: 220px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    pointer-events: none;
+  }
+  #flightTooltip.show { display: block; }
+  .tt-flight { font-family: var(--mono); color: var(--accent2); font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .tt-route { color: var(--text2); font-size: 12px; margin-bottom: 10px; }
+  .tt-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-family: var(--mono); margin-bottom: 10px; }
+  .tt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tt-item .tt-val { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+  .tt-item .tt-lbl { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .tt-airline { font-size: 11px; color: var(--text3); margin-top: 8px; border-top: 0.5px solid var(--border); padding-top: 8px; }
+
+  /* WEATHER */
+  #weather { padding: 2rem; }
+  .weather-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 1.5rem; }
+  .weather-main { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; }
+  .weather-main::after { content: ''; position: absolute; right: -20px; top: -20px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(59,158,255,0.08), transparent 70%); border-radius: 50%; }
+  .wx-temp { font-family: var(--display); font-size: 64px; font-weight: 800; letter-spacing: -3px; line-height: 1; }
+  .wx-cond { color: var(--text2); font-size: 15px; margin-top: 6px; }
+  .wx-loc { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 12px; letter-spacing: 0.06em; }
+  .wx-icon { font-size: 52px; margin-bottom: 8px; }
+  .weather-details { background: var(--surface); border: 0.5px solid var(--border); border-radius: 16px; padding: 1.5rem; }
+  .wx-alert { background: rgba(239,68,68,0.08); border: 0.5px solid rgba(239,68,68,0.25); border-radius: 12px; padding: 1rem 1.25rem; margin-top: 16px; display: flex; gap: 10px; align-items: flex-start; grid-column: span 3; }
+  .wx-alert-icon { font-size: 20px; flex-shrink: 0; }
+  .wx-alert-title { font-size: 13px; font-weight: 500; color: var(--red); margin-bottom: 3px; }
+  .wx-alert-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .wx-forecast { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 16px; }
+  .wx-fc-item { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px; text-align: center; }
+  .wx-fc-day { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.05em; }
+  .wx-fc-icon { font-size: 20px; margin: 6px 0; }
+  .wx-fc-temp { font-size: 13px; font-weight: 500; color: var(--text); font-family: var(--display); }
+
+  /* CHATBOT */
+  #chatbot { padding: 2rem; }
+  .chat-container { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 16px; overflow: hidden; max-width: 700px; margin: 0 auto; }
+  .chat-header { padding: 1.25rem 1.5rem; border-bottom: 0.5px solid var(--border2); display: flex; align-items: center; gap: 12px; }
+  .bot-avatar { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .bot-name { font-weight: 600; font-size: 14px; }
+  .bot-status { font-size: 11px; color: var(--green); display: flex; align-items: center; gap: 5px; }
+  .chat-messages { height: 400px; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 14px; }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .msg { display: flex; gap: 10px; max-width: 85%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .msg.bot .msg-avatar { background: linear-gradient(135deg, var(--accent), #8b5cf6); }
+  .msg.user .msg-avatar { background: var(--surface2); border: 0.5px solid var(--border2); }
+  .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+  .msg.bot .msg-bubble { background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text); border-bottom-left-radius: 4px; }
+  .msg.user .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .chat-suggestions { padding: 0.75rem 1.25rem; display: flex; gap: 8px; flex-wrap: wrap; border-top: 0.5px solid var(--border); }
+  .suggestion-chip { padding: 6px 12px; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 20px; font-size: 12px; color: var(--text2); cursor: pointer; transition: all 0.2s; }
+  .suggestion-chip:hover { border-color: var(--accent); color: var(--accent2); background: rgba(59,158,255,0.08); }
+  .chat-input-row { padding: 1rem 1.25rem; border-top: 0.5px solid var(--border2); display: flex; gap: 10px; align-items: center; }
+  .chat-input { flex: 1; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: var(--sans); outline: none; transition: border-color 0.2s; }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--text3); }
+  .chat-send { background: var(--accent); border: none; border-radius: 10px; width: 38px; height: 38px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: opacity 0.2s; flex-shrink: 0; }
+  .chat-send:hover { opacity: 0.85; }
+
+  /* CROWD */
+  #crowd { padding: 2rem; }
+  .crowd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 1.5rem; }
+  .crowd-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .crowd-area { font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+  .crowd-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+  .crowd-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .crowd-fill.low { background: var(--green); }
+  .crowd-fill.med { background: var(--amber); }
+  .crowd-fill.high { background: var(--red); }
+  .crowd-label { font-size: 12px; display: flex; justify-content: space-between; }
+  .crowd-status { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+  .crowd-pct { font-family: var(--mono); font-size: 12px; color: var(--text3); }
+  .crowd-status.low { color: var(--green); }
+  .crowd-status.med { color: var(--amber); }
+  .crowd-status.high { color: var(--red); }
+  .crowd-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+  /* ===== INDOOR NAV ===== */
+  #indoor { padding: 2rem; }
+  .indoor-map { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 16px; overflow: hidden; }
+  .indoor-header { padding: 1rem 1.5rem; border-bottom: 0.5px solid var(--border2); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .terminal-tabs { display: flex; gap: 4px; }
+  .t-tab { padding: 7px 16px; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text2); border: 0.5px solid var(--border); background: none; font-family: var(--sans); transition: all 0.2s; }
+  .t-tab.active { background: var(--accent); color: #fff; border-color: transparent; }
+  .indoor-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 3px; }
+  .indoor-body { padding: 1.5rem; }
+  /* Detailed terminal SVG */
+  .indoor-svg-scroll { overflow-x: auto; }
+  svg.indoor-svg { display: block; min-width: 900px; width: 100%; height: 420px; }
+
+  /* Quick nav buttons */
+  .nav-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem; }
+  .nav-action-btn { padding: 8px 16px; background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text2); font-family: var(--sans); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .nav-action-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* NOTIF PANEL */
+  .notif-panel { position: fixed; right: 0; top: 60px; bottom: 0; width: 340px; background: var(--bg2); border-left: 0.5px solid var(--border2); z-index: 90; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
+  .notif-panel.open { transform: translateX(0); }
+  .notif-header { padding: 1.25rem 1.5rem; border-bottom: 0.5px solid var(--border2); display: flex; justify-content: space-between; align-items: center; }
+  .notif-title { font-family: var(--display); font-size: 18px; font-weight: 700; }
+  .close-notif { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 20px; }
+  .notif-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; }
+  .notif-item { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; display: flex; gap: 10px; }
+  .notif-item.unread { border-color: var(--border2); background: var(--surface2); }
+  .notif-icon { font-size: 20px; flex-shrink: 0; }
+  .notif-msg { font-size: 13px; font-weight: 500; color: var(--text); }
+  .notif-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+  .notif-time { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 5px; }
+
+  /* TOAST */
+  .toast-container { position: fixed; top: 80px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 12px; padding: 12px 16px; min-width: 280px; display: flex; align-items: flex-start; gap: 10px; animation: slideIn 0.3s ease; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.hiding { animation: slideOut 0.3s ease forwards; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes slideOut { to { transform: translateX(100%); opacity: 0; } }
+  .toast-icon { font-size: 18px; flex-shrink: 0; }
+  .toast-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .toast-msg { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* LOADER */
+  .loader-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.5s; }
+  .loader-logo { font-family: var(--display); font-size: 32px; font-weight: 800; color: var(--text); margin-bottom: 2rem; }
+  .loader-logo span { color: var(--accent); }
+  .loader-bar { width: 200px; height: 2px; background: var(--surface2); border-radius: 1px; overflow: hidden; }
+  .loader-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #8b5cf6); border-radius: 1px; animation: load 1.5s ease forwards; }
+  @keyframes load { from { width: 0%; } to { width: 100%; } }
+  .loader-text { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 1rem; letter-spacing: 0.06em; }
+
+  @media (max-width: 768px) {
+    .live-stats { grid-template-columns: repeat(2, 1fr); }
+    .detail-meta { grid-template-columns: repeat(2, 1fr); }
+    .detail-grid { grid-template-columns: 1fr; }
+    .weather-grid { grid-template-columns: 1fr; }
+    .crowd-grid { grid-template-columns: repeat(2, 1fr); }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-logo">Aero<span>Vision</span></div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-text">INITIALIZING FLIGHT INTELLIGENCE...</div>
+</div>
+
+<!-- AUTH GATE -->
+<div id="authGate">
+  <div class="auth-wrap">
+    <div class="auth-logo-big">Aero<span>Vision</span></div>
+    <div class="auth-tagline">Live Flight Intelligence · Bengaluru International</div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="atLogin" onclick="switchAuthTab('login')">Sign In</div>
+        <div class="auth-tab" id="atSignup" onclick="switchAuthTab('signup')">Create Account</div>
+      </div>
+
+      <div id="loginForm">
+        <div class="field"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+        <button class="auth-btn" onclick="enterApp('Signed in successfully')">Sign In</button>
+        <div class="auth-divider">or continue with</div>
+        <div class="social-login">
+          <div class="social-btn" onclick="enterApp('Signed in with Google')">G</div>
+          <div class="social-btn" onclick="enterApp('Signed in with Apple')">🍎</div>
+        </div>
+      </div>
+
+      <div id="signupForm" style="display:none;">
+        <div class="field"><label>Full Name</label><input type="text" placeholder="Rahul Sharma"></div>
+        <div class="field"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" placeholder="Create a strong password"></div>
+        <button class="auth-btn" onclick="enterApp('Welcome to AeroVision!')">Create Account</button>
+        <div class="auth-divider">or continue with</div>
+        <div class="social-login">
+          <div class="social-btn" onclick="enterApp('Signed in with Google')">G</div>
+          <div class="social-btn" onclick="enterApp('Signed in with Apple')">🍎</div>
+        </div>
+      </div>
+
+      <div class="auth-divider">or</div>
+      <button class="guest-btn" onclick="enterApp('Continuing as guest')">👤 Continue as Guest</button>
+    </div>
+    <div class="auth-footer">🔐 Secured with 256-bit SSL · Save flights · Get alerts</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell">
+  <!-- NAV -->
+  <nav>
+    <div class="nav-brand" onclick="showSection('home')">✈ Aero<span>Vision</span></div>
+    <div class="nav-links">
+      <a onclick="showSection('home')" id="nav-home" class="active">Home</a>
+      <a onclick="showSection('fids')" id="nav-fids">Live Board</a>
+      <a onclick="showSection('radar')" id="nav-radar">Radar</a>
+      <a onclick="showSection('weather')" id="nav-weather">Weather</a>
+      <a onclick="showSection('crowd')" id="nav-crowd">Crowd</a>
+      <a onclick="showSection('indoor')" id="nav-indoor">Navigate</a>
+      <a onclick="showSection('chatbot')" id="nav-chatbot">Assistant</a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-bell" onclick="toggleNotif()">🔔<div class="badge">3</div></div>
+      <div class="user-chip" id="userChip"><div class="user-dot"></div><span id="userLabel">Guest</span></div>
+    </div>
+  </nav>
+
+  <!-- NOTIF PANEL -->
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-header">
+      <div class="notif-title">Notifications</div>
+      <button class="close-notif" onclick="toggleNotif()">✕</button>
+    </div>
+    <div class="notif-list">
+      <div class="notif-item unread"><div class="notif-icon">🚪</div><div class="notif-body"><div class="notif-msg">Gate Change — AI 302</div><div class="notif-sub">Gate changed from B12 to C04</div><div class="notif-time">2 min ago</div></div></div>
+      <div class="notif-item unread"><div class="notif-icon">📣</div><div class="notif-body"><div class="notif-msg">Boarding — EK 571</div><div class="notif-sub">Now boarding Group A at Gate D18</div><div class="notif-time">8 min ago</div></div></div>
+      <div class="notif-item unread"><div class="notif-icon">⏱</div><div class="notif-body"><div class="notif-msg">Delay — 6E 4421</div><div class="notif-sub">Delayed by 45 min. New dep: 22:30</div><div class="notif-time">25 min ago</div></div></div>
+      <div class="notif-item"><div class="notif-icon">✅</div><div class="notif-body"><div class="notif-msg">Landed — 9W 118</div><div class="notif-sub">Flight landed at Terminal 2</div><div class="notif-time">1 hr ago</div></div></div>
+      <div class="notif-item"><div class="notif-icon">🌦</div><div class="notif-body"><div class="notif-msg">Weather Advisory</div><div class="notif-sub">Thunderstorm warning affecting 12 flights</div><div class="notif-time">2 hr ago</div></div></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ===== HOME ===== -->
+  <section id="home" class="active">
+    <div class="hero">
+      <div class="hero-grid"></div>
+      <div class="hero-glow"></div>
+      <div class="hero-tag">● LIVE — BENGALURU KEMPEGOWDA INTERNATIONAL</div>
+      <h1>Real-Time<br>Flight <em>Intelligence</em></h1>
+      <p>Track any flight, get live gate updates, radar maps and delay alerts — all in one place.</p>
+      <div class="search-bar">
+        <input type="text" id="heroSearch" placeholder="Search flight number, airline or destination..." oninput="handleSearch(this.value)" onblur="setTimeout(()=>document.getElementById('acList').classList.remove('show'),200)">
+        <button class="search-btn" onclick="doSearch()">🔍</button>
+        <div class="autocomplete-list" id="acList"></div>
+      </div>
+      <div class="quick-btns">
+        <button class="qbtn" onclick="showFids('departures')"><span class="qi">✈️</span> Departures</button>
+        <button class="qbtn" onclick="showFids('arrivals')"><span class="qi">🛬</span> Arrivals</button>
+        <button class="qbtn" onclick="showSection('radar')"><span class="qi">📍</span> Track Flight</button>
+        <button class="qbtn" onclick="showSection('chatbot')"><span class="qi">🤖</span> Ask Assistant</button>
+      </div>
+    </div>
+    <div class="live-stats">
+      <div class="stat-card blue"><div class="stat-label">Total Flights Today</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">↑ 3.2% vs yesterday</div></div>
+      <div class="stat-card green"><div class="stat-label">On Time</div><div class="stat-value" id="statOntime">0</div><div class="stat-sub">81.6% on-time rate</div></div>
+      <div class="stat-card amber"><div class="stat-label">Delayed</div><div class="stat-value" id="statDelayed">0</div><div class="stat-sub">Avg delay: 34 min</div></div>
+      <div class="stat-card red"><div class="stat-label">Cancelled</div><div class="stat-value" id="statCancelled">0</div><div class="stat-sub">Weather: 28 | Tech: 16</div></div>
+    </div>
+  </section>
+
+  <!-- ===== FIDS ===== -->
+  <section id="fids">
+    <div style="padding:2rem 2rem 0;">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="page-back" onclick="goBack('home')">← Back</button>
+          <div class="section-title">Live Flight Board</div>
+        </div>
+        <div class="refresh-badge"><div class="pulse"></div> Auto-refreshing</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:1rem;">
+        <div class="tabs">
+          <button class="tab active" id="tab-dep" onclick="switchTab('departures')">✈ Departures</button>
+          <button class="tab" id="tab-arr" onclick="switchTab('arrivals')">🛬 Arrivals</button>
+        </div>
+        <div class="fids-filters">
+          <select class="filter-select" id="filterAirline" onchange="renderFids()">
+            <option value="">All Airlines</option>
+            <option>IndiGo</option><option>Air India</option><option>SpiceJet</option>
+            <option>Emirates</option><option>Vistara</option><option>GoAir</option>
+          </select>
+          <select class="filter-select" id="filterStatus" onchange="renderFids()">
+            <option value="">All Status</option>
+            <option>On Time</option><option>Delayed</option><option>Boarding</option>
+            <option>Cancelled</option><option>Landed</option>
+          </select>
+          <select class="filter-select" id="sortBy" onchange="renderFids()">
+            <option value="time">Sort: Time</option>
+            <option value="delayed">Delayed First</option>
+            <option value="airline">Airline</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;overflow-x:auto;">
+      <table class="fids-table" id="fidsTable">
+        <thead>
+          <tr><th>Flight</th><th>Airline</th><th>Destination</th><th>Departs</th><th>Gate</th><th>Terminal</th><th>Status</th></tr>
+        </thead>
+        <tbody id="fidsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== FLIGHT DETAIL ===== -->
+  <section id="detail">
+    <div style="padding:2rem;">
+      <button class="back-btn" id="detailBackBtn" onclick="goBack('fids')">← Back to Flight Board</button>
+      <div class="detail-hero">
+        <div class="detail-route">
+          <div class="route-city"><div class="route-code" id="dFrom">BLR</div><div class="route-name" id="dFromName">Bengaluru</div></div>
+          <div class="route-line">
+            <div class="route-plane">✈</div>
+            <div class="route-dash"></div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text3);" id="dDuration">2h 45m</div>
+          </div>
+          <div class="route-city"><div class="route-code" id="dTo">DEL</div><div class="route-name" id="dToName">New Delhi</div></div>
+        </div>
+        <div class="detail-meta">
+          <div class="meta-item"><div class="meta-label">Flight</div><div class="meta-value" id="dFlight">6E 2341</div><div class="meta-sub" id="dAirline">IndiGo</div></div>
+          <div class="meta-item"><div class="meta-label">Gate</div><div class="meta-value" id="dGate">B14</div><div class="meta-sub" id="dTerminal">Terminal 1</div></div>
+          <div class="meta-item"><div class="meta-label">Departure</div><div class="meta-value" id="dDeparts">18:45</div><div class="meta-sub" id="dStatus">On Time</div></div>
+          <div class="meta-item"><div class="meta-label">Boarding</div><div class="meta-value" id="dBoarding">18:15</div><div class="meta-sub">Group A first</div></div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="dc-title">Flight Timeline</div>
+          <div class="timeline">
+            <div class="tl-item"><div class="tl-left"><div class="tl-dot done"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-time">16:00</div><div class="tl-label">Check-in Opens</div><div class="tl-sub">Counter 12–18, Terminal 1</div></div></div>
+            <div class="tl-item"><div class="tl-left"><div class="tl-dot done"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-time">17:30</div><div class="tl-label">Security Cutoff</div><div class="tl-sub">Be through security by this time</div></div></div>
+            <div class="tl-item"><div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-time">18:15</div><div class="tl-label">Boarding Begins</div><div class="tl-sub">Gate B14 · Group A, B, C</div></div></div>
+            <div class="tl-item"><div class="tl-left"><div class="tl-dot future"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-time">18:30</div><div class="tl-label">Gate Closes</div><div class="tl-sub">All groups must be boarded</div></div></div>
+            <div class="tl-item"><div class="tl-left"><div class="tl-dot future"></div></div><div class="tl-content"><div class="tl-time">18:45</div><div class="tl-label">Departure</div><div class="tl-sub">Estimated arrival: 21:30 DEL</div></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="detail-card" style="margin-bottom:12px;">
+            <div class="dc-title">Status</div>
+            <div id="detailStatusBig" style="margin-bottom:12px;"></div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.6;" id="detailStatusMsg"></div>
+          </div>
+          <div class="detail-card">
+            <div class="dc-title">Aircraft Info</div>
+            <div class="wx-row"><div class="wx-key">Aircraft</div><div class="wx-val">Airbus A320neo</div></div>
+            <div class="wx-row"><div class="wx-key">Registration</div><div class="wx-val">VT-IZA</div></div>
+            <div class="wx-row"><div class="wx-key">Age</div><div class="wx-val">3.2 years</div></div>
+            <div class="wx-row"><div class="wx-key">Seats</div><div class="wx-val">186 (all economy)</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RADAR ===== -->
+  <section id="radar">
+    <div style="padding:2rem 2rem 0;">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="page-back" onclick="goBack('home')">← Back</button>
+          <div class="section-title">Live Flight Radar — BLR Airspace</div>
+        </div>
+        <div class="refresh-badge"><div class="pulse"></div> Real-time tracking</div>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;">
+      <div class="radar-wrapper">
+        <div class="radar-toolbar">
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);">
+            <span>✈ <span style="color:var(--accent2);">In Air</span></span>
+            <span>🛬 <span style="color:var(--green);">On Ground</span></span>
+            <span style="font-family:var(--mono);font-size:11px;" id="acCountLabel">24 aircraft tracked</span>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <select class="filter-select" style="font-size:11px;" onchange="filterAltitude(this.value)">
+              <option value="all">All Altitudes</option>
+              <option value="ground">Ground Only</option>
+              <option value="low">Below FL200</option>
+              <option value="high">FL200+</option>
+            </select>
+          </div>
+        </div>
+        <div class="radar-canvas-wrap">
+          <canvas id="radarCanvas"></canvas>
+          <div class="radar-overlay-chips">
+            <div class="radar-chip">📍 BLR / VOBL · 13.1986° N, 77.7066° E</div>
+            <div class="radar-chip">FIR: VATM · INDIA ACC</div>
+          </div>
+          <div id="flightTooltip">
+            <div class="tt-flight" id="tt-flight">6E 2341</div>
+            <div class="tt-route" id="tt-route">BLR → DEL</div>
+            <div class="tt-status ontime" id="tt-status-pill"><div class="dot"></div> On Time</div>
+            <div class="tt-grid">
+              <div class="tt-item"><div class="tt-val" id="tt-speed">820</div><div class="tt-lbl">Speed km/h</div></div>
+              <div class="tt-item"><div class="tt-val" id="tt-alt">35,000</div><div class="tt-lbl">Altitude ft</div></div>
+              <div class="tt-item"><div class="tt-val" id="tt-hdg">318°</div><div class="tt-lbl">Heading</div></div>
+              <div class="tt-item"><div class="tt-val" id="tt-dep">18:45</div><div class="tt-lbl">Departure</div></div>
+            </div>
+            <div class="tt-airline" id="tt-airline">IndiGo · A320neo · VT-IZA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WEATHER ===== -->
+  <section id="weather">
+    <div style="padding:2rem 2rem 0;">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="page-back" onclick="goBack('home')">← Back</button>
+          <div class="section-title">Weather at BLR</div>
+        </div>
+        <div class="refresh-badge"><div class="pulse"></div> Updated 5 min ago</div>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;">
+      <div class="weather-grid">
+        <div class="weather-main">
+          <div class="wx-icon">⛈</div>
+          <div class="wx-temp">27°C</div>
+          <div class="wx-cond">Thunderstorms · Heavy Rain</div>
+          <div class="wx-loc">KEMPEGOWDA INTERNATIONAL · BLR / VOBL</div>
+          <div style="margin-top:1.5rem;">
+            <div class="wx-row"><div class="wx-key">Feels Like</div><div class="wx-val">31°C</div></div>
+            <div class="wx-row"><div class="wx-key">Visibility</div><div class="wx-val">4.2 km</div></div>
+            <div class="wx-row"><div class="wx-key">Wind</div><div class="wx-val">SW 28 kt gusting 44 kt</div></div>
+            <div class="wx-row"><div class="wx-key">Humidity</div><div class="wx-val">91%</div></div>
+            <div class="wx-row"><div class="wx-key">Pressure</div><div class="wx-val">1008 hPa</div></div>
+          </div>
+        </div>
+        <div class="weather-details">
+          <div class="dc-title" style="margin-bottom:1rem;">Flight Impact</div>
+          <div class="wx-row"><div class="wx-key">Departures affected</div><div class="wx-val" style="color:var(--amber);">12</div></div>
+          <div class="wx-row"><div class="wx-key">Arrivals holding</div><div class="wx-val" style="color:var(--amber);">4</div></div>
+          <div class="wx-row"><div class="wx-key">Ground stops</div><div class="wx-val" style="color:var(--red);">1</div></div>
+          <div class="wx-row"><div class="wx-key">Avg delay (wx)</div><div class="wx-val">52 min</div></div>
+          <div class="wx-row"><div class="wx-key">Runway active</div><div class="wx-val">09L / 27R</div></div>
+          <div class="wx-row"><div class="wx-key">METAR</div><div class="wx-val" style="font-size:10px;letter-spacing:0.04em;">VOBL 251030Z 22028G44KT</div></div>
+          <div style="margin-top:1.5rem;">
+            <div class="dc-title" style="margin-bottom:1rem;">5-Day Forecast</div>
+            <div class="wx-forecast">
+              <div class="wx-fc-item"><div class="wx-fc-day">WED</div><div class="wx-fc-icon">⛈</div><div class="wx-fc-temp">27°</div></div>
+              <div class="wx-fc-item"><div class="wx-fc-day">THU</div><div class="wx-fc-icon">🌦</div><div class="wx-fc-temp">29°</div></div>
+              <div class="wx-fc-item"><div class="wx-fc-day">FRI</div><div class="wx-fc-icon">⛅</div><div class="wx-fc-temp">31°</div></div>
+              <div class="wx-fc-item"><div class="wx-fc-day">SAT</div><div class="wx-fc-icon">☀️</div><div class="wx-fc-temp">32°</div></div>
+              <div class="wx-fc-item"><div class="wx-fc-day">SUN</div><div class="wx-fc-icon">🌤</div><div class="wx-fc-temp">30°</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="wx-alert" style="grid-column:span 2;">
+          <div class="wx-alert-icon">⚠️</div>
+          <div>
+            <div class="wx-alert-title">Thunderstorm Warning — Active Until 23:00 IST</div>
+            <div class="wx-alert-text">Severe convective activity with lightning and heavy precipitation expected over BLR airspace. Pilot reports indicate moderate turbulence at FL240–FL360. Passengers advised to check flight status before travelling to the airport.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHATBOT ===== -->
+  <section id="chatbot">
+    <div style="padding:2rem 2rem 0;">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="page-back" onclick="goBack('home')">← Back</button>
+          <div class="section-title">Flight Assistant</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="bot-avatar">🤖</div>
+          <div><div class="bot-name">AeroBot</div><div class="bot-status"><div class="pulse"></div> Online</div></div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg bot">
+            <div class="msg-avatar">🤖</div>
+            <div class="msg-bubble">Hi! I'm AeroBot, your airport assistant. I can help you with flight status, gate info, delays, weather, and navigation. What can I help you with today?</div>
+          </div>
+        </div>
+        <div class="chat-suggestions">
+          <div class="suggestion-chip" onclick="sendChat('What is the status of flight 6E 2341?')">Status of 6E 2341</div>
+          <div class="suggestion-chip" onclick="sendChat('Which gate is EK 571 departing from?')">Gate for EK 571</div>
+          <div class="suggestion-chip" onclick="sendChat('Are any flights delayed today?')">Delayed flights</div>
+          <div class="suggestion-chip" onclick="sendChat('How is the weather affecting flights?')">Weather impact</div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chatInput" placeholder="Type your question..." onkeydown="if(event.key==='Enter') sendChatFromInput()">
+          <button class="chat-send" onclick="sendChatFromInput()">➤</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CROWD ===== -->
+  <section id="crowd">
+    <div style="padding:2rem 2rem 0;">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="page-back" onclick="goBack('home')">← Back</button>
+          <div class="section-title">Crowd Density</div>
+        </div>
+        <div class="refresh-badge"><div class="pulse"></div> Live</div>
+      </div>
+      <div style="margin-bottom:1rem;display:flex;gap:1.5rem;font-size:13px;color:var(--text2);">
+        <span style="color:var(--green);">● Low</span>
+        <span style="color:var(--amber);">● Medium</span>
+        <span style="color:var(--red);">● High</span>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;">
+      <div class="crowd-grid" id="crowdGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== INDOOR NAV ===== -->
+  <section id="indoor">
+    <div style="padding:2rem 2rem 0;">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="page-back" onclick="goBack('home')">← Back</button>
+          <div class="section-title">Terminal Navigator — BLR</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;">
+      <div class="indoor-map">
+        <div class="indoor-header">
+          <div class="terminal-tabs">
+            <button class="t-tab active" onclick="switchTerminal(this,'t1')">Terminal 1</button>
+            <button class="t-tab" onclick="switchTerminal(this,'t2')">Terminal 2</button>
+          </div>
+          <div class="indoor-legend">
+            <div class="leg-item"><div class="leg-dot" style="background:#3b9eff;"></div>Your Location</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#22c55e;"></div>Gate</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#f59e0b;"></div>Security</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#ef4444;"></div>Crowded</div>
+            <div class="leg-item"><div class="leg-dot" style="background:rgba(99,179,255,0.25);border:1px solid rgba(99,179,255,0.4);"></div>Amenity</div>
+          </div>
+        </div>
+        <div class="indoor-body">
+          <div class="indoor-svg-scroll">
+            <!-- Terminal 1 Map -->
+            <svg id="mapT1" class="indoor-svg" viewBox="0 0 940 380" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#3b9eff" opacity="0.8"/>
+                </marker>
+                <pattern id="gridPat" width="30" height="30" patternUnits="userSpaceOnUse">
+                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(99,179,255,0.04)" stroke-width="0.5"/>
+                </pattern>
+              </defs>
+              <!-- Background -->
+              <rect width="940" height="380" fill="#060d1a"/>
+              <rect width="940" height="380" fill="url(#gridPat)"/>
+
+              <!-- Runway indicator (top) -->
+              <rect x="0" y="0" width="940" height="30" fill="rgba(59,158,255,0.04)" stroke="rgba(99,179,255,0.1)" stroke-width="0.5"/>
+              <text x="470" y="19" text-anchor="middle" fill="rgba(99,179,255,0.25)" font-size="10" font-family="DM Mono" letter-spacing="0.15em">APRON · TAXIWAY · RUNWAY 09L/27R</text>
+
+              <!-- Terminal 1 main building -->
+              <rect x="30" y="42" width="620" height="130" rx="6" fill="#0d1525" stroke="rgba(99,179,255,0.25)" stroke-width="1"/>
+              <text x="340" y="62" text-anchor="middle" fill="rgba(99,179,255,0.4)" font-size="11" font-family="DM Mono" letter-spacing="0.1em">TERMINAL 1</text>
+
+              <!-- Gate piers: Gates 01-09 (left pier) -->
+              <rect x="50" y="42" width="110" height="130" rx="4" fill="#0a1020" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="105" y="75" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATES</text>
+              <text x="105" y="91" text-anchor="middle" fill="#63b3ff" font-size="14" font-family="DM Mono" font-weight="500">01–09</text>
+              <!-- Individual gate labels -->
+              <text x="62" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G01</text>
+              <text x="85" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G02</text>
+              <text x="108" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G03</text>
+              <text x="62" y="135" fill="#2a3a5a" font-size="8" font-family="DM Mono">G04</text>
+              <text x="85" y="135" fill="#2a3a5a" font-size="8" font-family="DM Mono">G05</text>
+              <text x="108" y="135" fill="#2a3a5a" font-size="8" font-family="DM Mono">G06</text>
+
+              <!-- Gates 10-18 (second section) -->
+              <rect x="180" y="42" width="110" height="130" rx="4" fill="#0a1020" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="235" y="75" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATES</text>
+              <text x="235" y="91" text-anchor="middle" fill="#63b3ff" font-size="14" font-family="DM Mono" font-weight="500">10–18</text>
+              <text x="192" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G10</text>
+              <text x="215" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G12</text>
+              <text x="238" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G14</text>
+
+              <!-- YOUR LOCATION: Gate B14 (highlighted) -->
+              <rect x="310" y="42" width="110" height="130" rx="4" fill="#0a1525" stroke="rgba(59,158,255,0.7)" stroke-width="1.5"/>
+              <!-- You are here indicator -->
+              <circle cx="365" cy="35" r="10" fill="#3b9eff" opacity="0.9"/>
+              <text x="365" y="39" text-anchor="middle" fill="white" font-size="10">📍</text>
+              <text x="365" y="70" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">YOU ARE HERE</text>
+              <text x="365" y="86" text-anchor="middle" fill="#3b9eff" font-size="13" font-family="DM Mono" font-weight="500">GATE B14</text>
+              <text x="365" y="101" text-anchor="middle" fill="#22c55e" font-size="9" font-family="DM Mono">● BOARDING NOW</text>
+              <text x="365" y="118" text-anchor="middle" fill="#8899bb" font-size="9" font-family="DM Mono">6E 2341 · BLR→DEL</text>
+              <text x="365" y="132" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">Departs 18:45</text>
+
+              <!-- Gates 19-25 -->
+              <rect x="440" y="42" width="100" height="130" rx="4" fill="#0a1020" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="490" y="75" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATES</text>
+              <text x="490" y="91" text-anchor="middle" fill="#63b3ff" font-size="14" font-family="DM Mono" font-weight="500">19–25</text>
+              <text x="452" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G19</text>
+              <text x="475" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G21</text>
+              <text x="498" y="118" fill="#2a3a5a" font-size="8" font-family="DM Mono">G23</text>
+
+              <!-- Gates 26-42 -->
+              <rect x="560" y="42" width="80" height="130" rx="4" fill="#0a1020" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="600" y="75" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATES</text>
+              <text x="600" y="91" text-anchor="middle" fill="#63b3ff" font-size="13" font-family="DM Mono" font-weight="500">26–42</text>
+
+              <!-- Main concourse corridor -->
+              <rect x="30" y="172" width="780" height="52" rx="4" fill="#0c1422" stroke="rgba(99,179,255,0.15)" stroke-width="0.5"/>
+              <text x="420" y="202" text-anchor="middle" fill="rgba(99,179,255,0.2)" font-size="11" font-family="DM Mono" letter-spacing="0.12em">MAIN CONCOURSE</text>
+
+              <!-- Navigation path from current location to B14 -->
+              <path d="M 200 198 L 310 198" fill="none" stroke="#3b9eff" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#arr)" opacity="0.8"/>
+              <text x="255" y="192" text-anchor="middle" fill="#3b9eff" font-size="9" font-family="DM Mono" opacity="0.8">→ 80m</text>
+
+              <!-- Security checkpoint -->
+              <rect x="668" y="172" width="90" height="52" rx="3" fill="#0c1200" stroke="rgba(245,158,11,0.4)" stroke-width="1"/>
+              <text x="713" y="195" text-anchor="middle" fill="#f59e0b" font-size="10" font-family="DM Mono">🔒</text>
+              <text x="713" y="210" text-anchor="middle" fill="#f59e0b" font-size="9" font-family="DM Mono">SECURITY</text>
+              <text x="713" y="222" text-anchor="middle" fill="#92400e" font-size="8" font-family="DM Mono">MED WAIT</text>
+
+              <!-- Check-in area -->
+              <rect x="760" y="172" width="60" height="52" rx="3" fill="#0c1020" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="790" y="196" text-anchor="middle" fill="#4a5a7a" font-size="10">🎫</text>
+              <text x="790" y="212" text-anchor="middle" fill="#4a5a7a" font-size="8" font-family="DM Mono">CHECK-IN</text>
+
+              <!-- Amenities row -->
+              <rect x="30" y="240" width="840" height="90" rx="4" fill="#08101c" stroke="rgba(99,179,255,0.08)" stroke-width="0.5"/>
+              <text x="420" y="258" text-anchor="middle" fill="rgba(99,179,255,0.15)" font-size="10" font-family="DM Mono" letter-spacing="0.1em">AMENITIES LEVEL</text>
+
+              <!-- Restrooms -->
+              <rect x="48" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="84" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">🚻</text>
+              <text x="84" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">RESTROOMS</text>
+
+              <!-- Cafe / Coffee -->
+              <rect x="132" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="168" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">☕</text>
+              <text x="168" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">COTHAS CAFE</text>
+
+              <!-- Krispy Kreme -->
+              <rect x="216" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="252" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">🍩</text>
+              <text x="252" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">KRISPY KREME</text>
+
+              <!-- Lounge -->
+              <rect x="300" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.15)" stroke-width="0.5"/>
+              <text x="336" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">🛋</text>
+              <text x="336" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">BLR LOUNGE</text>
+
+              <!-- Shops / Duty Free -->
+              <rect x="384" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="420" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">🛒</text>
+              <text x="420" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">DUTY FREE</text>
+
+              <!-- Forex -->
+              <rect x="468" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="504" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">💱</text>
+              <text x="504" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">FOREX</text>
+
+              <!-- Medical -->
+              <rect x="552" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="588" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">💊</text>
+              <text x="588" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">MEDICAL</text>
+
+              <!-- ATM -->
+              <rect x="636" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="672" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">🏧</text>
+              <text x="672" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">ATM</text>
+
+              <!-- Smoor -->
+              <rect x="720" y="264" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="756" y="288" text-anchor="middle" fill="#4a5a7a" font-size="16">🍫</text>
+              <text x="756" y="307" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">SMOOR</text>
+
+              <!-- Parking / Exit -->
+              <rect x="30" y="348" width="880" height="22" rx="3" fill="rgba(59,158,255,0.04)" stroke="rgba(99,179,255,0.1)" stroke-width="0.5"/>
+              <text x="250" y="363" text-anchor="middle" fill="rgba(99,179,255,0.2)" font-size="9" font-family="DM Mono">← PARKING P1/P2 · PICKUP & DROP-OFF · OLA / UBER ZONE</text>
+              <text x="700" y="363" text-anchor="middle" fill="rgba(99,179,255,0.2)" font-size="9" font-family="DM Mono">KIAL T1 EXIT ROAD →</text>
+
+              <!-- Compass -->
+              <circle cx="895" cy="50" r="18" fill="rgba(13,18,32,0.9)" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="895" y="44" text-anchor="middle" fill="#63b3ff" font-size="9" font-family="DM Mono">N</text>
+              <text x="895" y="56" text-anchor="middle" fill="#3b9eff" font-size="18">↑</text>
+
+              <!-- Legend box -->
+              <rect x="822" y="240" width="108" height="96" rx="6" fill="rgba(6,13,26,0.95)" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="876" y="258" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono" letter-spacing="0.08em">LEGEND</text>
+              <circle cx="835" cy="272" r="5" fill="#3b9eff"/>
+              <text x="845" y="276" fill="#8899bb" font-size="9" font-family="DM Mono">You are here</text>
+              <rect x="830" y="284" width="10" height="7" rx="2" fill="#0a1020" stroke="rgba(34,197,94,0.5)" stroke-width="0.8"/>
+              <text x="845" y="291" fill="#8899bb" font-size="9" font-family="DM Mono">Active gate</text>
+              <rect x="830" y="300" width="10" height="7" rx="2" fill="#0a1020" stroke="rgba(245,158,11,0.4)" stroke-width="0.8"/>
+              <text x="845" y="307" fill="#8899bb" font-size="9" font-family="DM Mono">Security</text>
+              <line x1="830" y1="318" x2="844" y2="318" stroke="#3b9eff" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+              <text x="849" y="322" fill="#8899bb" font-size="9" font-family="DM Mono">Route</text>
+            </svg>
+
+            <!-- Terminal 2 Map -->
+            <svg id="mapT2" class="indoor-svg" viewBox="0 0 940 380" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+              <defs>
+                <marker id="arr2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="#3b9eff" opacity="0.8"/>
+                </marker>
+                <pattern id="gridPat2" width="30" height="30" patternUnits="userSpaceOnUse">
+                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(99,179,255,0.04)" stroke-width="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="940" height="380" fill="#060d1a"/>
+              <rect width="940" height="380" fill="url(#gridPat2)"/>
+
+              <!-- Apron -->
+              <rect x="0" y="0" width="940" height="30" fill="rgba(59,158,255,0.04)" stroke="rgba(99,179,255,0.1)" stroke-width="0.5"/>
+              <text x="470" y="19" text-anchor="middle" fill="rgba(99,179,255,0.25)" font-size="10" font-family="DM Mono" letter-spacing="0.15em">APRON · TAXIWAY · RUNWAY 09L/27R</text>
+
+              <!-- Terminal 2 building (horizontal + vertical pier) -->
+              <!-- Horizontal main section -->
+              <rect x="200" y="42" width="700" height="120" rx="6" fill="#0d1525" stroke="rgba(99,179,255,0.25)" stroke-width="1"/>
+              <text x="550" y="62" text-anchor="middle" fill="rgba(99,179,255,0.4)" font-size="11" font-family="DM Mono" letter-spacing="0.1em">TERMINAL 2 — INTERNATIONAL</text>
+
+              <!-- Gates C01–C06 (left section) -->
+              <rect x="210" y="52" width="130" height="100" rx="4" fill="#0a1020" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="275" y="82" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATES</text>
+              <text x="275" y="98" text-anchor="middle" fill="#63b3ff" font-size="14" font-family="DM Mono" font-weight="500">C01–C06</text>
+              <text x="222" y="125" fill="#2a3a5a" font-size="8" font-family="DM Mono">C01 C02 C03</text>
+              <text x="222" y="140" fill="#2a3a5a" font-size="8" font-family="DM Mono">C04 C05 C06</text>
+
+              <!-- Gate D18 (EK 571 departure) highlighted -->
+              <rect x="360" y="52" width="130" height="100" rx="4" fill="#0a1525" stroke="rgba(59,158,255,0.55)" stroke-width="1.2"/>
+              <text x="425" y="76" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATE</text>
+              <text x="425" y="92" text-anchor="middle" fill="#3b9eff" font-size="14" font-family="DM Mono" font-weight="500">D18</text>
+              <text x="425" y="107" text-anchor="middle" fill="#22c55e" font-size="9" font-family="DM Mono">● BOARDING</text>
+              <text x="425" y="122" text-anchor="middle" fill="#8899bb" font-size="9" font-family="DM Mono">EK 571 · BLR→DXB</text>
+              <text x="425" y="138" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">Departs 20:30</text>
+
+              <!-- Gates D01–D13 (vertical pier) -->
+              <rect x="820" y="42" width="80" height="200" rx="4" fill="#0a1020" stroke="rgba(99,179,255,0.2)" stroke-width="1"/>
+              <text x="860" y="70" text-anchor="middle" fill="#4a5a7a" font-size="9" font-family="DM Mono">GATES</text>
+              <text x="860" y="86" text-anchor="middle" fill="#63b3ff" font-size="13" font-family="DM Mono" font-weight="500">D01–D13</text>
+              <!-- Individual D gate labels -->
+              <text x="840" y="110" fill="#2a3a5a" font-size="8" font-family="DM Mono">D01</text>
+              <text x="870" y="110" fill="#2a3a5a" font-size="8" font-family="DM Mono">D02</text>
+              <text x="840" y="128" fill="#2a3a5a" font-size="8" font-family="DM Mono">D03</text>
+              <text x="870" y="128" fill="#2a3a5a" font-size="8" font-family="DM Mono">D04</text>
+              <text x="840" y="146" fill="#2a3a5a" font-size="8" font-family="DM Mono">D05</text>
+              <text x="870" y="146" fill="#2a3a5a" font-size="8" font-family="DM Mono">D06</text>
+              <text x="840" y="164" fill="#2a3a5a" font-size="8" font-family="DM Mono">D07</text>
+              <text x="870" y="164" fill="#2a3a5a" font-size="8" font-family="DM Mono">D08</text>
+              <text x="840" y="182" fill="#2a3a5a" font-size="8" font-family="DM Mono">D09</text>
+              <text x="870" y="182" fill="#2a3a5a" font-size="8" font-family="DM Mono">D10</text>
+              <text x="840" y="200" fill="#2a3a5a" font-size="8" font-family="DM Mono">D11</text>
+              <text x="870" y="200" fill="#2a3a5a" font-size="8" font-family="DM Mono">D12</text>
+              <text x="855" y="218" fill="#2a3a5a" font-size="8" font-family="DM Mono">D13</text>
+
+              <!-- Concourse -->
+              <rect x="200" y="162" width="620" height="50" rx="4" fill="#0c1422" stroke="rgba(99,179,255,0.15)" stroke-width="0.5"/>
+              <text x="510" y="191" text-anchor="middle" fill="rgba(99,179,255,0.2)" font-size="11" font-family="DM Mono" letter-spacing="0.1em">INTERNATIONAL CONCOURSE</text>
+
+              <!-- T2 connecting to D wing -->
+              <rect x="820" y="162" width="80" height="50" rx="0" fill="#0c1422" stroke="rgba(99,179,255,0.1)" stroke-width="0.5"/>
+
+              <!-- Security T2 -->
+              <rect x="510" y="162" width="90" height="50" rx="3" fill="#0c1200" stroke="rgba(245,158,11,0.4)" stroke-width="1"/>
+              <text x="555" y="185" text-anchor="middle" fill="#f59e0b" font-size="10" font-family="DM Mono">🔒</text>
+              <text x="555" y="200" text-anchor="middle" fill="#f59e0b" font-size="9" font-family="DM Mono">SECURITY</text>
+
+              <!-- Immigration -->
+              <rect x="620" y="162" width="80" height="50" rx="3" fill="#0c1020" stroke="rgba(59,158,255,0.2)" stroke-width="0.5"/>
+              <text x="660" y="185" text-anchor="middle" fill="#3b9eff" font-size="10" font-family="DM Mono">🛂</text>
+              <text x="660" y="200" text-anchor="middle" fill="#3b9eff" font-size="9" font-family="DM Mono">IMMIGR.</text>
+
+              <!-- Amenities T2 -->
+              <rect x="30" y="230" width="880" height="90" rx="4" fill="#08101c" stroke="rgba(99,179,255,0.08)" stroke-width="0.5"/>
+              <text x="420" y="248" text-anchor="middle" fill="rgba(99,179,255,0.15)" font-size="10" font-family="DM Mono" letter-spacing="0.1em">AMENITIES · ARRIVALS LEVEL</text>
+
+              <!-- Baggage Belts -->
+              <rect x="48" y="254" width="80" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="88" y="278" text-anchor="middle" fill="#4a5a7a" font-size="11" font-family="DM Mono">BELT</text>
+              <text x="88" y="293" text-anchor="middle" fill="#3b9eff" font-size="13" font-family="DM Mono" font-weight="500">1–3</text>
+              <text x="88" y="306" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">BAGGAGE</text>
+
+              <rect x="140" y="254" width="80" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="180" y="278" text-anchor="middle" fill="#4a5a7a" font-size="11" font-family="DM Mono">BELT</text>
+              <text x="180" y="293" text-anchor="middle" fill="#3b9eff" font-size="13" font-family="DM Mono" font-weight="500">5–7</text>
+              <text x="180" y="306" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">BAGGAGE</text>
+
+              <rect x="240" y="254" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="276" y="278" text-anchor="middle" fill="#4a5a7a" font-size="16">💱</text>
+              <text x="276" y="300" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">FOREX</text>
+
+              <rect x="324" y="254" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="360" y="278" text-anchor="middle" fill="#4a5a7a" font-size="16">🛒</text>
+              <text x="360" y="300" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">DUTY FREE</text>
+
+              <rect x="408" y="254" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="444" y="278" text-anchor="middle" fill="#4a5a7a" font-size="16">🍗</text>
+              <text x="444" y="300" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">KFC</text>
+
+              <rect x="492" y="254" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="528" y="278" text-anchor="middle" fill="#4a5a7a" font-size="16">🚻</text>
+              <text x="528" y="300" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">RESTROOMS</text>
+
+              <rect x="576" y="254" width="72" height="54" rx="4" fill="#060d1a" stroke="rgba(99,179,255,0.12)" stroke-width="0.5"/>
+              <text x="612" y="278" text-anchor="middle" fill="#4a5a7a" font-size="16">🎨</text>
+              <text x="612" y="300" text-anchor="middle" fill="#3a4a6a" font-size="8" font-family="DM Mono">ART GALLERY</text>
+
+              <!-- Ride zone / exit -->
+              <rect x="30" y="338" width="420" height="32" rx="3" fill="rgba(59,158,255,0.04)" stroke="rgba(99,179,255,0.1)" stroke-width="0.5"/>
+              <text x="240" y="358" text-anchor="middle" fill="rgba(99,179,255,0.25)" font-size="9" font-family="DM Mono">OLA / UBER / BLUSMART · PICKUP ZONE → EXIT</text>
+
+              <rect x="490" y="338" width="420" height="32" rx="3" fill="rgba(59,158,255,0.04)" stroke="rgba(99,179,255,0.1)" stroke-width="0.5"/>
+              <text x="700" y="358" text-anchor="middle" fill="rgba(99,179,255,0.25)" font-size="9" font-family="DM Mono">← T2 TRANSIT BUS TO T1 · KIAL T2 EXIT ROAD</text>
+
+              <!-- Compass -->
+              <circle cx="895" cy="50" r="18" fill="rgba(13,18,32,0.9)" stroke="rgba(99,179,255,0.2)" stroke-width="0.5"/>
+              <text x="895" y="44" text-anchor="middle" fill="#63b3ff" font-size="9" font-family="DM Mono">N</text>
+              <text x="895" y="56" text-anchor="middle" fill="#3b9eff" font-size="18">↑</text>
+            </svg>
+          </div>
+          <div class="nav-actions">
+            <button class="nav-action-btn" onclick="showToast('📍','Navigation','Routing to Gate B14 — 80m ahead, turn right at concourse')">📍 Navigate to Gate B14</button>
+            <button class="nav-action-btn" onclick="showToast('🚻','Restrooms','Nearest restroom: 40m left from Gate B14')">🚻 Find Restrooms</button>
+            <button class="nav-action-btn" onclick="showToast('🛋','Lounge','Bengaluru Club Lounge — Level 2, 150m from security')">🛋 Find Lounge</button>
+            <button class="nav-action-btn" onclick="showToast('☕','Food','Cothas Cafe — 60m, Krispy Kreme — 90m in amenities level')">☕ Food & Drink</button>
+            <button class="nav-action-btn" onclick="showToast('🏧','ATM','SBI ATM — 110m ahead, near medical bay')">🏧 Find ATM</button>
+            <button class="nav-action-btn" onclick="showToast('🛂','Immigration','Immigration — T2 only, Level 1, past security checkpoint')">🛂 Immigration (T2)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- end appShell -->
+
+<script>
+// ===== DATA =====
+const flightData = [
+  {num:'6E 2341',airline:'IndiGo',from:'BLR',to:'DEL',fromName:'Bengaluru',toName:'New Delhi',dep:'18:45',gate:'B14',terminal:'T1',status:'ontime',statusLabel:'On Time',duration:'2h 15m',speed:'820',alt:'35,000',hdg:'318°',aircraft:'A320neo · VT-IZA'},
+  {num:'AI 101',airline:'Air India',from:'BLR',to:'BOM',fromName:'Bengaluru',toName:'Mumbai',dep:'19:10',gate:'A06',terminal:'T1',status:'boarding',statusLabel:'Boarding',duration:'1h 30m',speed:'795',alt:'33,500',hdg:'285°',aircraft:'A321 · VT-PPH'},
+  {num:'EK 571',airline:'Emirates',from:'BLR',to:'DXB',fromName:'Bengaluru',toName:'Dubai',dep:'20:30',gate:'D18',terminal:'T2',status:'ontime',statusLabel:'On Time',duration:'3h 45m',speed:'875',alt:'38,000',hdg:'315°',aircraft:'B777-300ER · A6-EBE'},
+  {num:'AI 665',airline:'Air India',from:'DEL',to:'BOM',fromName:'New Delhi',toName:'Mumbai',dep:'22:15',gate:'D22',terminal:'T2',status:'delayed',statusLabel:'Delayed 45m',duration:'2h 00m',speed:'810',alt:'36,000',hdg:'225°',aircraft:'A320 · VT-EXN'},
+  {num:'6E 445',airline:'IndiGo',from:'BLR',to:'HYD',fromName:'Bengaluru',toName:'Hyderabad',dep:'17:55',gate:'B08',terminal:'T1',status:'ontime',statusLabel:'On Time',duration:'0h 55m',speed:'755',alt:'28,000',hdg:'50°',aircraft:'A320 · VT-INJ'},
+  {num:'SG 162',airline:'SpiceJet',from:'BLR',to:'CCU',fromName:'Bengaluru',toName:'Kolkata',dep:'21:20',gate:'C11',terminal:'T1',status:'delayed',statusLabel:'Delayed 20m',duration:'2h 45m',speed:'800',alt:'32,000',hdg:'60°',aircraft:'B737-800 · VT-SZZ'},
+  {num:'UK 815',airline:'Vistara',from:'BLR',to:'DEL',fromName:'Bengaluru',toName:'New Delhi',dep:'23:00',gate:'A12',terminal:'T1',status:'ontime',statusLabel:'On Time',duration:'2h 30m',speed:'840',alt:'34,000',hdg:'340°',aircraft:'A320neo · VT-TNH'},
+  {num:'9W 118',airline:'GoAir',from:'BLR',to:'MAA',fromName:'Bengaluru',toName:'Chennai',dep:'16:30',gate:'B02',terminal:'T1',status:'landed',statusLabel:'Landed',duration:'0h 50m',speed:'0',alt:'Ground',hdg:'090°',aircraft:'A320 · VT-WGJ'},
+  {num:'G8 201',airline:'GoAir',from:'BLR',to:'BOM',fromName:'Bengaluru',toName:'Mumbai',dep:'20:00',gate:'C04',terminal:'T1',status:'cancelled',statusLabel:'Cancelled',duration:'1h 30m',speed:'0',alt:'Ground',hdg:'—',aircraft:'A320 · VT-WGN'},
+  {num:'EK 572',airline:'Emirates',from:'DXB',to:'BLR',fromName:'Dubai',toName:'Bengaluru',dep:'19:45',gate:'D15',terminal:'T2',status:'ontime',statusLabel:'On Time',duration:'3h 30m',speed:'870',alt:'37,000',hdg:'135°',aircraft:'B777-300ER · A6-EBK'},
+];
+
+const acSuggestions = ['6E 2341 · IndiGo · BLR→DEL','AI 101 · Air India · BLR→BOM','EK 571 · Emirates · BLR→DXB','AI 665 · Air India · DEL→BOM','UK 815 · Vistara · BLR→DEL'];
+let currentTab = 'departures';
+let sectionHistory = [];
+let userLabel = 'Guest';
+
+// ===== AUTH =====
+function switchAuthTab(tab) {
+  document.getElementById('atLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('atSignup').classList.toggle('active', tab === 'signup');
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+}
+
+function enterApp(msg) {
+  document.getElementById('authGate').classList.add('hidden');
+  document.getElementById('appShell').classList.add('visible');
+  // Determine label
+  if (msg.includes('Guest')) {
+    userLabel = 'Guest';
+  } else if (msg.includes('Google')) {
+    userLabel = 'Google User';
+  } else {
+    userLabel = 'User';
+  }
+  document.getElementById('userLabel').textContent = userLabel;
+  showToast('✅', 'Welcome!', msg);
+  renderFids();
+  animateStat('statTotal', 847);
+  animateStat('statOntime', 691);
+  animateStat('statDelayed', 112);
+  animateStat('statCancelled', 44);
+  setTimeout(() => showToast('🚪', 'Gate Change', 'AI 302 moved to Gate C04'), 2000);
+  setTimeout(() => showToast('📣', 'Boarding Call', 'EK 571 now boarding at D18'), 5000);
+}
+
+// ===== SECTION NAV =====
+function showSection(id) {
+  const current = document.querySelector('#appShell section.active');
+  if (current && current.id !== id) sectionHistory.push(current.id);
+  document.querySelectorAll('#appShell section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + id);
+  if (navEl) navEl.classList.add('active');
+  if (id === 'fids') renderFids();
+  if (id === 'radar') initRadar();
+  if (id === 'crowd') renderCrowd();
+  window.scrollTo(0,0);
+}
+
+function goBack(fallback) {
+  const prev = sectionHistory.pop() || fallback || 'home';
+  document.querySelectorAll('#appShell section').forEach(s => s.classList.remove('active'));
+  document.getElementById(prev).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + prev);
+  if (navEl) navEl.classList.add('active');
+}
+
+function showFids(tab) {
+  showSection('fids');
+  switchTab(tab);
+}
+
+// ===== SEARCH =====
+function handleSearch(val) {
+  const list = document.getElementById('acList');
+  if (!val || val.length < 2) { list.classList.remove('show'); return; }
+  const filtered = acSuggestions.filter(s => s.toLowerCase().includes(val.toLowerCase()));
+  if (!filtered.length) { list.classList.remove('show'); return; }
+  list.innerHTML = filtered.map(s => {
+    const parts = s.split(' · ');
+    return `<div class="ac-item" onclick="selectFlight('${parts[0]}')"><span class="ac-num">${parts[0]}</span><span class="ac-info">${parts.slice(1).join(' · ')}</span></div>`;
+  }).join('');
+  list.classList.add('show');
+}
+
+function selectFlight(num) {
+  document.getElementById('heroSearch').value = num;
+  document.getElementById('acList').classList.remove('show');
+  const f = flightData.find(f => f.num === num.trim());
+  if (f) showDetail(f, 'home');
+}
+
+function doSearch() {
+  const val = document.getElementById('heroSearch').value.trim();
+  const f = flightData.find(f => f.num.toLowerCase().includes(val.toLowerCase()) || f.airline.toLowerCase().includes(val.toLowerCase()));
+  if (f) showDetail(f, 'home');
+  else showToast('🔍','No results',`No flight found for "${val}"`);
+}
+
+// ===== FIDS =====
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-dep').classList.toggle('active', tab === 'departures');
+  document.getElementById('tab-arr').classList.toggle('active', tab === 'arrivals');
+  renderFids();
+}
+
+function renderFids() {
+  const airline = document.getElementById('filterAirline')?.value || '';
+  const status = document.getElementById('filterStatus')?.value || '';
+  const sort = document.getElementById('sortBy')?.value || 'time';
+  let data = [...flightData];
+  if (airline) data = data.filter(f => f.airline === airline);
+  if (status) data = data.filter(f => f.statusLabel.toLowerCase().includes(status.toLowerCase()));
+  if (sort === 'delayed') data.sort((a,b) => (b.status === 'delayed') - (a.status === 'delayed'));
+  if (sort === 'airline') data.sort((a,b) => a.airline.localeCompare(b.airline));
+  const tbody = document.getElementById('fidsBody');
+  if (!tbody) return;
+  const dest = currentTab === 'departures' ? 'to' : 'from';
+  tbody.innerHTML = data.map(f => `
+    <tr onclick="showDetail(flightData[${flightData.indexOf(f)}], 'fids')">
+      <td><span class="flight-num">${f.num}</span></td>
+      <td><div class="airline-logo"><div class="al-icon">${f.airline.substring(0,2).toUpperCase()}</div>${f.airline}</div></td>
+      <td>${f[dest]} <span style="color:var(--text3);font-size:12px;">${currentTab==='departures'?f.toName:f.fromName}</span></td>
+      <td style="font-family:var(--mono);">${f.dep}</td>
+      <td style="font-family:var(--mono);color:var(--accent2);">${f.gate}</td>
+      <td>${f.terminal}</td>
+      <td><span class="status-pill ${f.status}"><div class="dot"></div>${f.statusLabel}</span></td>
+    </tr>`).join('');
+}
+
+function showDetail(f, from) {
+  if (from) sectionHistory.push(from);
+  document.getElementById('detailBackBtn').onclick = () => goBack(from || 'fids');
+  document.getElementById('dFrom').textContent = f.from;
+  document.getElementById('dTo').textContent = f.to;
+  document.getElementById('dFromName').textContent = f.fromName;
+  document.getElementById('dToName').textContent = f.toName;
+  document.getElementById('dDuration').textContent = f.duration;
+  document.getElementById('dFlight').textContent = f.num;
+  document.getElementById('dAirline').textContent = f.airline;
+  document.getElementById('dGate').textContent = f.gate;
+  document.getElementById('dTerminal').textContent = f.terminal;
+  document.getElementById('dDeparts').textContent = f.dep;
+  document.getElementById('dStatus').textContent = f.statusLabel;
+  document.getElementById('detailStatusBig').innerHTML = `<span class="status-pill ${f.status}" style="font-size:14px;padding:6px 16px;"><div class="dot"></div>${f.statusLabel}</span>`;
+  const msgs = {
+    ontime:'Flight is operating on schedule. No delays reported. Aircraft is at gate.',
+    delayed:`Flight is delayed by ${f.statusLabel.replace('Delayed ','')}. Airline is working to minimize wait time.`,
+    boarding:`Boarding is in progress at gate ${f.gate}. Please proceed to gate immediately. Group A, B, C boarding.`,
+    cancelled:'This flight has been cancelled. Please contact the airline desk for rebooking options.',
+    landed:'Flight has landed safely. Baggage will be available on carousel 4. Welcome to your destination.'
+  };
+  document.getElementById('detailStatusMsg').textContent = msgs[f.status] || '';
+  document.querySelectorAll('#appShell section').forEach(s => s.classList.remove('active'));
+  document.getElementById('detail').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ===== RADAR =====
+let radarInited = false;
+let animFrame;
+const BLR_LAT = 13.1986, BLR_LNG = 77.7066;
+
+// Aircraft data with realistic positions relative to BLR
+const radarAircraft = [
+  {id:'6E 2341',route:'BLR → DEL',airline:'IndiGo · A320neo · VT-IZA',status:'ontime',statusLabel:'On Time',speed:'826',alt:'35,400',hdg:318,dep:'18:45',x:0.52,y:0.48,ground:false,vx:0.0003,vy:-0.0003},
+  {id:'AI 101',route:'BLR → BOM',airline:'Air India · A321 · VT-PPH',status:'boarding',statusLabel:'Boarding',speed:'0',alt:'Ground',hdg:270,dep:'19:10',x:0.47,y:0.54,ground:true,vx:0,vy:0},
+  {id:'EK 571',route:'BLR → DXB',airline:'Emirates · B777-300ER · A6-EBE',status:'ontime',statusLabel:'On Time',speed:'875',alt:'38,200',hdg:315,dep:'20:30',x:0.45,y:0.47,ground:false,vx:0.00025,vy:-0.00025},
+  {id:'AI 665',route:'DEL → BOM',airline:'Air India · A320 · VT-EXN',status:'delayed',statusLabel:'Delayed 45m',speed:'812',alt:'36,100',hdg:225,dep:'22:15',x:0.60,y:0.38,ground:false,vx:-0.0002,vy:0.0002},
+  {id:'6E 445',route:'BLR → HYD',airline:'IndiGo · A320 · VT-INJ',status:'ontime',statusLabel:'On Time',speed:'755',alt:'28,000',hdg:50,dep:'17:55',x:0.58,y:0.52,ground:false,vx:0.00018,vy:-0.00008},
+  {id:'SG 162',route:'BLR → CCU',airline:'SpiceJet · B737 · VT-SZZ',status:'delayed',statusLabel:'Delayed 20m',speed:'802',alt:'32,500',hdg:60,dep:'21:20',x:0.55,y:0.44,ground:false,vx:0.00016,vy:-0.0001},
+  {id:'UK 815',route:'BLR → DEL',airline:'Vistara · A320neo · VT-TNH',status:'ontime',statusLabel:'On Time',speed:'840',alt:'34,000',hdg:340,dep:'23:00',x:0.50,y:0.60,ground:false,vx:0.00005,vy:-0.00028},
+  {id:'9W 118',route:'BLR → MAA',airline:'GoAir · A320 · VT-WGJ',status:'landed',statusLabel:'Landed',speed:'0',alt:'Ground',hdg:90,dep:'16:30',x:0.50,y:0.52,ground:true,vx:0,vy:0},
+  {id:'EK 572',route:'DXB → BLR',airline:'Emirates · B777 · A6-EBK',status:'ontime',statusLabel:'On Time',speed:'870',alt:'37,200',hdg:135,dep:'19:45',x:0.30,y:0.28,ground:false,vx:0.00022,vy:0.00022},
+  {id:'QR 502',route:'DOH → BLR',airline:'Qatar Airways · A350 · A7-ALE',status:'ontime',statusLabel:'On Time',speed:'895',alt:'39,000',hdg:140,dep:'21:00',x:0.22,y:0.20,ground:false,vx:0.0002,vy:0.00024},
+  {id:'SQ 524',route:'SIN → BLR',airline:'Singapore Air · A380 · 9V-SKZ',status:'ontime',statusLabel:'On Time',speed:'910',alt:'40,000',hdg:310,dep:'20:00',x:0.72,y:0.70,ground:false,vx:0.0001,vy:-0.0003},
+  {id:'AI 543',route:'BLR → CCU',airline:'Air India · A320 · VT-EPL',status:'ontime',statusLabel:'On Time',speed:'790',alt:'31,000',hdg:65,dep:'18:30',x:0.62,y:0.55,ground:false,vx:0.00022,vy:-0.0001},
+];
+
+let filteredAlt = 'all';
+function filterAltitude(val) { filteredAlt = val; }
+
+function initRadar() {
+  if (radarInited) return;
+  radarInited = true;
+  const canvas = document.getElementById('radarCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.offsetWidth;
+    canvas.height = 580;
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); });
+
+  // Mouse interaction
+  let hoveredAc = null;
+  const tooltip = document.getElementById('flightTooltip');
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    hoveredAc = null;
+    for (const ac of radarAircraft) {
+      const px = ac.x * canvas.width;
+      const py = ac.y * canvas.height;
+      const dist = Math.sqrt((mx-px)**2 + (my-py)**2);
+      if (dist < 20) { hoveredAc = ac; break; }
+    }
+    if (hoveredAc) {
+      canvas.style.cursor = 'pointer';
+      showAcTooltip(hoveredAc, e.clientX, e.clientY, rect);
+    } else {
+      canvas.style.cursor = 'crosshair';
+      tooltip.classList.remove('show');
+    }
+  });
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    for (const ac of radarAircraft) {
+      const px = ac.x * canvas.width;
+      const py = ac.y * canvas.height;
+      const dist = Math.sqrt((mx-px)**2 + (my-py)**2);
+      if (dist < 20) {
+        const fd = flightData.find(f => f.num === ac.id);
+        if (fd) showDetail(fd, 'radar');
+        break;
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('show');
+    hoveredAc = null;
+  });
+
+  function showAcTooltip(ac, cx, cy, rect) {
+    document.getElementById('tt-flight').textContent = ac.id;
+    document.getElementById('tt-route').textContent = ac.route;
+    document.getElementById('tt-speed').textContent = ac.ground ? 'On Ground' : ac.speed + ' km/h';
+    document.getElementById('tt-alt').textContent = ac.alt + (ac.ground ? '' : ' ft');
+    document.getElementById('tt-hdg').textContent = ac.ground ? '—' : ac.hdg + '°';
+    document.getElementById('tt-dep').textContent = ac.dep;
+    document.getElementById('tt-airline').textContent = ac.airline;
+    const pill = document.getElementById('tt-status-pill');
+    pill.className = 'tt-status ' + ac.status;
+    pill.innerHTML = `<div class="dot"></div> ${ac.statusLabel}`;
+
+    // Position tooltip
+    const tw = 220, th = 170;
+    let tx = cx - rect.left + 12;
+    let ty = cy - rect.top - th/2;
+    if (tx + tw > canvas.width) tx = cx - rect.left - tw - 12;
+    if (ty < 0) ty = 4;
+    if (ty + th > canvas.height) ty = canvas.height - th - 4;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+    tooltip.classList.add('show');
+  }
+
+  function drawRadar() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = '#04090f';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(59,158,255,0.05)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < W; x += 50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 50) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    // Lat/lng labels
+    ctx.font = '9px DM Mono, monospace';
+    ctx.fillStyle = 'rgba(99,179,255,0.15)';
+    for (let i = 0; i <= 6; i++) {
+      const lat = (14.2 - i * 0.3).toFixed(1);
+      const y = (i / 6) * H;
+      ctx.fillText(lat + '°N', 4, y + 10);
+    }
+    for (let i = 0; i <= 6; i++) {
+      const lng = (76.8 + i * 0.3).toFixed(1);
+      const x = (i / 6) * W;
+      ctx.fillText(lng + '°E', x, H - 4);
+    }
+
+    // Range rings around BLR
+    const blrX = 0.50 * W, blrY = 0.52 * H;
+    [60, 120, 180, 240].forEach((r, i) => {
+      const radius = r * (W / 800);
+      ctx.beginPath();
+      ctx.arc(blrX, blrY, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(59,158,255,0.06)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(99,179,255,0.15)';
+      ctx.font = '8px DM Mono, monospace';
+      ctx.fillText(`${(i+1)*50}km`, blrX + radius + 2, blrY);
+    });
+
+    // BLR airport marker
+    ctx.beginPath();
+    ctx.arc(blrX, blrY, 10, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(59,158,255,0.2)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(blrX, blrY, 10, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(59,158,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Runway line
+    ctx.beginPath();
+    ctx.moveTo(blrX - 22, blrY);
+    ctx.lineTo(blrX + 22, blrY);
+    ctx.strokeStyle = 'rgba(59,158,255,0.5)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#63b3ff';
+    ctx.font = 'bold 10px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BLR', blrX, blrY - 16);
+    ctx.font = '8px DM Mono, monospace';
+    ctx.fillStyle = 'rgba(99,179,255,0.4)';
+    ctx.fillText('VOBL', blrX, blrY - 6);
+    ctx.textAlign = 'left';
+
+    // Draw aircraft trails and icons
+    for (const ac of radarAircraft) {
+      const shouldShow = filteredAlt === 'all' ||
+        (filteredAlt === 'ground' && ac.ground) ||
+        (filteredAlt === 'low' && !ac.ground && parseInt(ac.alt) < 20000) ||
+        (filteredAlt === 'high' && !ac.ground && parseInt(ac.alt) >= 20000);
+      if (!shouldShow) continue;
+
+      const px = ac.x * W;
+      const py = ac.y * H;
+
+      // Determine color
+      let color = ac.ground ? '#22c55e' : '#3b9eff';
+      if (ac.status === 'delayed') color = '#f59e0b';
+      if (ac.status === 'cancelled') color = '#ef4444';
+      if (ac.status === 'landed' || ac.ground) color = '#22c55e';
+
+      const isHovered = hoveredAc === ac;
+
+      // Pulse ring for hovered/active
+      if (isHovered) {
+        ctx.beginPath();
+        ctx.arc(px, py, 22, 0, Math.PI * 2);
+        ctx.strokeStyle = color + '55';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Glow
+      if (!ac.ground) {
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, isHovered ? 18 : 12);
+        grad.addColorStop(0, color + '44');
+        grad.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(px, py, isHovered ? 18 : 12, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // Plane icon (rotated)
+      ctx.save();
+      ctx.translate(px, py);
+      if (!ac.ground) ctx.rotate(((ac.hdg - 90) * Math.PI) / 180);
+      ctx.font = `${isHovered ? 22 : 16}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = ac.ground ? '#22c55e' : color;
+      ctx.globalAlpha = ac.status === 'cancelled' ? 0.4 : 1;
+      ctx.fillText(ac.ground ? '🛩' : '✈', 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Flight label
+      ctx.font = '9px DM Mono, monospace';
+      ctx.fillStyle = isHovered ? color : 'rgba(99,179,255,0.5)';
+      ctx.textAlign = 'center';
+      ctx.fillText(ac.id, px, py + 20);
+      if (!ac.ground) {
+        ctx.font = '8px DM Mono, monospace';
+        ctx.fillStyle = 'rgba(99,179,255,0.25)';
+        ctx.fillText(ac.alt + 'ft', px, py + 30);
+      }
+      ctx.textAlign = 'left';
+
+      // Move aircraft
+      if (!ac.ground) {
+        ac.x += ac.vx;
+        ac.y += ac.vy;
+        if (ac.x < 0.02 || ac.x > 0.98) ac.vx = -ac.vx;
+        if (ac.y < 0.02 || ac.y > 0.98) ac.vy = -ac.vy;
+      }
+    }
+
+    // Aircraft count
+    const visible = radarAircraft.filter(ac => filteredAlt === 'all' || (filteredAlt === 'ground' && ac.ground) || (filteredAlt === 'low' && !ac.ground && parseInt(ac.alt) < 20000) || (filteredAlt === 'high' && !ac.ground && parseInt(ac.alt) >= 20000));
+    document.getElementById('acCountLabel').textContent = `${visible.length} aircraft tracked`;
+
+    animFrame = requestAnimationFrame(drawRadar);
+  }
+  drawRadar();
+}
+
+// ===== CROWD =====
+const crowdZones = [
+  {area:'Gate A1–A8',pct:22,level:'low',label:'Low'},
+  {area:'Gate B12–B18 ⚠',pct:78,level:'high',label:'High'},
+  {area:'Gate C1–C6',pct:55,level:'med',label:'Medium'},
+  {area:'Security Lane 1',pct:85,level:'high',label:'High'},
+  {area:'Security Lane 2',pct:40,level:'med',label:'Medium'},
+  {area:'Check-in Area',pct:30,level:'low',label:'Low'},
+  {area:'Food Court',pct:65,level:'med',label:'Medium'},
+  {area:'Lounge (BLR Club)',pct:15,level:'low',label:'Low'},
+  {area:'Arrivals Hall',pct:50,level:'med',label:'Medium'},
+];
+function renderCrowd() {
+  const grid = document.getElementById('crowdGrid');
+  if (grid.childElementCount > 0) return;
+  crowdZones.forEach(z => {
+    const card = document.createElement('div');
+    card.className = 'crowd-card';
+    card.innerHTML = `<div class="crowd-area">${z.area}</div><div class="crowd-bar"><div class="crowd-fill ${z.level}" style="width:0%"></div></div><div class="crowd-label"><div class="crowd-status ${z.level}"><div class="crowd-dot"></div>${z.label}</div><div class="crowd-pct">${z.pct}%</div></div>`;
+    grid.appendChild(card);
+    setTimeout(() => { card.querySelector('.crowd-fill').style.width = z.pct + '%'; }, 100);
+  });
+}
+
+// ===== TERMINAL SWITCH =====
+function switchTerminal(el, id) {
+  el.parentElement.querySelectorAll('.t-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mapT1').style.display = id === 't1' ? 'block' : 'none';
+  document.getElementById('mapT2').style.display = id === 't2' ? 'block' : 'none';
+}
+
+// ===== CHAT =====
+const botResponses = {
+  '6e 2341': '✈ Flight 6E 2341 (IndiGo) is <strong>On Time</strong>. Departing BLR→DEL at 18:45 from Gate B14, Terminal 1. Boarding begins at 18:15.',
+  'ek 571': '🌍 EK 571 (Emirates) BLR→DXB is <strong>On Time</strong>. Scheduled departure 20:30 from Gate D18, Terminal 2. Aircraft: B777-300ER.',
+  'delayed': '⏱ Currently 2 flights are delayed:<br>• AI 665 (DEL→BOM) — +45 min<br>• SG 162 (BLR→CCU) — +20 min<br>Average delay: 32 min.',
+  'weather': '⛈ Thunderstorm warning active at BLR until 23:00 IST. 12 departures affected with avg delay of 52 min. Visibility 4.2 km. Check your flight before heading to airport.',
+  'gate': '🚪 Gate info: EK 571 departs from Gate <strong>D18</strong>, Terminal 2. 6E 2341 departs from Gate <strong>B14</strong>, Terminal 1. Boarding ~45 min before departure.',
+  'default': "I'm checking that for you... I can help with flight status, gate info, delays, weather, and terminal navigation. Try asking about a specific flight number like 6E 2341!"
+};
+
+function sendChat(text) {
+  addMsg(text, 'user');
+  setTimeout(() => {
+    let key = Object.keys(botResponses).find(k => text.toLowerCase().includes(k));
+    addMsg(botResponses[key || 'default'], 'bot');
+  }, 600);
+}
+
+function sendChatFromInput() {
+  const input = document.getElementById('chatInput');
+  if (!input.value.trim()) return;
+  sendChat(input.value.trim());
+  input.value = '';
+}
+
+function addMsg(text, role) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="msg-avatar">${role === 'bot' ? '🤖' : '👤'}</div><div class="msg-bubble">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ===== NOTIFICATIONS =====
+function toggleNotif() {
+  document.getElementById('notifPanel').classList.toggle('open');
+}
+
+// ===== TOAST =====
+function showToast(icon, title, msg) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<div class="toast-icon">${icon}</div><div><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ===== STAT ANIMATION =====
+function animateStat(id, target) {
+  let current = 0; const step = target / 40;
+  const interval = setInterval(() => {
+    current = Math.min(current + step, target);
+    const el = document.getElementById(id);
+    if (el) el.textContent = Math.floor(current);
+    if (current >= target) clearInterval(interval);
+  }, 30);
+}
+
+// ===== FIDS AUTO REFRESH =====
+setInterval(() => {
+  if (document.getElementById('fids')?.classList.contains('active')) renderFids();
+}, 8000);
+
+// ===== LOADER =====
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const loader = document.getElementById('loader');
+    loader.style.opacity = '0';
+    setTimeout(() => loader.remove(), 500);
+  }, 1600);
+});
+</script>
+</body>
+</html>

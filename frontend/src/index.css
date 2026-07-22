@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Dark theme (default) ──────────────────────────────── */
+:root {
+  --bg:       #080c14;
+  --bg2:      #0d1220;
+  --bg3:      #111827;
+  --surface:  #141c2e;
+  --surface2: #1a2540;
+  --surface3: #0c1220;
+
+  --border:   rgba(99,179,255,0.12);
+  --border2:  rgba(99,179,255,0.22);
+  --border3:  rgba(99,179,255,0.10);
+  --border4:  rgba(99,179,255,0.18);
+  --border5:  rgba(99,179,255,0.08);
+  --border6:  rgba(99,179,255,0.28);
+
+  --accent:   #3b9eff;
+  --accent2:  #63b3ff;
+
+  --green:    #22c55e;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --purple:   #a78bfa;
+
+  --text:     #e8f0fe;
+  --text2:    #8899bb;
+  --text3:    #4a5a7a;
+  --text4:    #6677aa;
+  --text5:    #c8d8f0;
+}
+
+/* ── Light theme ────────────────────────────────────────── */
+html.light {
+  --bg:       #f0f4ff;
+  --bg2:      #ffffff;
+  --bg3:      #f8fafc;
+  --surface:  #eef2ff;
+  --surface2: #e0e7ff;
+  --surface3: #f0f4ff;
+
+  --border:   rgba(79,112,214,0.15);
+  --border2:  rgba(79,112,214,0.28);
+  --border3:  rgba(79,112,214,0.12);
+  --border4:  rgba(79,112,214,0.20);
+  --border5:  rgba(79,112,214,0.08);
+  --border6:  rgba(79,112,214,0.35);
+
+  --accent:   #2563eb;
+  --accent2:  #3b82f6;
+
+  --green:    #16a34a;
+  --amber:    #d97706;
+  --red:      #dc2626;
+  --purple:   #7c3aed;
+
+  --text:     #0f172a;
+  --text2:    #374151;
+  --text3:    #6b7280;
+  --text4:    #6b7280;
+  --text5:    #111827;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow-x: hidden; transition: background 0.25s, color 0.25s; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Glassmorphism utility */
+.glass { background: rgba(20,28,46,0.7); backdrop-filter: blur(20px); border: 0.5px solid var(--border2); }
+html.light .glass { background: rgba(240,244,255,0.85); }
+
+/* Status pills */
+.status-ontime    { background: rgba(34,197,94,0.12);  color: var(--green);  border: 0.5px solid rgba(34,197,94,0.25); }
+.status-delayed   { background: rgba(245,158,11,0.12); color: var(--amber);  border: 0.5px solid rgba(245,158,11,0.25); }
+.status-cancelled { background: rgba(239,68,68,0.12);  color: var(--red);    border: 0.5px solid rgba(239,68,68,0.25); }
+.status-boarding  { background: rgba(59,158,255,0.12); color: var(--accent2);border: 0.5px solid rgba(59,158,255,0.3); }
+.status-landed    { background: rgba(99,179,255,0.08); color: var(--text2);  border: 0.5px solid var(--border2); }
+.status-active    { background: rgba(59,158,255,0.12); color: var(--accent2);border: 0.5px solid rgba(59,158,255,0.3); }
+
+/* Leaflet overrides */
+.leaflet-container { background: #04090f !important; }
+html.light .leaflet-container { background: #e8eef8 !important; }
+.leaflet-tile-pane { filter: invert(1) hue-rotate(200deg) brightness(0.7) contrast(1.2); }
+html.light .leaflet-tile-pane { filter: none; }
+.leaflet-control-zoom a { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border2) !important; }
+.leaflet-popup-content-wrapper { background: var(--bg2) !important; color: var(--text) !important; border: 0.5px solid var(--border2); border-radius: 12px !important; }
+.leaflet-popup-tip { background: var(--bg2) !important; }
+
+/* Pulse animation */
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.animate-pulse-dot { animation: pulse 2s infinite; }
+
+/* Theme transition — smooth color changes on all elements */
+*, *::before, *::after { transition: background-color 0.25s, border-color 0.25s, color 0.2s; }
+/* But don't animate transforms / opacity for performance */
+.no-theme-transition { transition: none !important; }
