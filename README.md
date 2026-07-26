@@ -204,6 +204,14 @@ This platform is exclusively configured for **Kempegowda International Airport (
 - Real runway data (09R/27L, 09L/27R)
 - BLR airspace radar coverage (~220km radius)
 
+## Contributors
+
+Done by :
+1. Sriram Bhaskara-1CR25CS187
+2. Suhaas S Reddy-1CR25CS188
+3. Rechitha V-1CR25EC168
+4. Ratan Ojha-1CR25EC167
+
 ## License
 
 Private — All rights reserved.
