@@ -22,8 +22,7 @@ const ChatbotPage = lazy(() => import('./pages/ChatbotPage'));
 const CrowdPage          = lazy(() => import('./pages/CrowdPage'));
 const TravelPlannerPage  = lazy(() => import('./pages/TravelPlannerPage'));
 const MobilityAssistPage = lazy(() => import('./pages/MobilityAssistPage'));
-const AdminAssistPage         = lazy(() => import('./pages/AdminAssistPage'));
-const AdminAnalyticsDashboard = lazy(() => import('./pages/AdminAnalyticsDashboard'));
+
 const Dashboard               = lazy(() => import('./pages/Dashboard'));
 const CurrencyPage            = lazy(() => import('./pages/CurrencyPage'));
 const FlightComparePage       = lazy(() => import('./pages/FlightComparePage'));
@@ -97,8 +96,7 @@ export default function App() {
             <Route path="/crowd"      element={<PageTransition><PageBoundary><CrowdPage /></PageBoundary></PageTransition>} />
             <Route path="/travel"     element={<PageTransition><PageBoundary><TravelPlannerPage /></PageBoundary></PageTransition>} />
             <Route path="/assist"       element={<PageTransition><PageBoundary><MobilityAssistPage /></PageBoundary></PageTransition>} />
-            <Route path="/admin/assist"     element={<PageTransition><PageBoundary><AdminAssistPage /></PageBoundary></PageTransition>} />
-            <Route path="/admin/analytics" element={<PageTransition><PageBoundary><AdminAnalyticsDashboard /></PageBoundary></PageTransition>} />
+
             <Route path="/dashboard"       element={<PageTransition><PageBoundary><Dashboard /></PageBoundary></PageTransition>} />
             <Route path="/currency"        element={<PageTransition><PageBoundary><CurrencyPage /></PageBoundary></PageTransition>} />
             <Route path="/compare"         element={<PageTransition><PageBoundary><FlightComparePage /></PageBoundary></PageTransition>} />

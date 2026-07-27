@@ -191,18 +191,7 @@ export default function Navbar() {
                     Dashboard
                   </Link>
                 )}
-                {isAuthenticated && (
-                  <Link to="/admin/assist" onClick={() => setShowMenu(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--text2)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors border-t border-[var(--border5)]">
-                    <span className="text-[11px]">♿</span> Staff Dashboard
-                  </Link>
-                )}
-                {user && (
-                  <Link to="/admin/analytics" onClick={() => setShowMenu(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--text2)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors border-t border-[var(--border5)]">
-                    <span className="text-[11px]">📊</span> Analytics
-                  </Link>
-                )}
+
                 <button onClick={() => { logout(); setShowMenu(false); }}
                   className="w-full text-left px-4 py-2.5 text-sm text-[var(--red)] hover:bg-[var(--surface)] transition-colors border-t border-[var(--border5)]">
                   {isAuthenticated ? 'Sign Out' : 'Exit'}
