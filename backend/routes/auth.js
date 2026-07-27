@@ -103,8 +103,8 @@ router.put('/password', authenticate, async (req, res) => {
   try {
     const { current_password, new_password } = req.body;
 
-    if (!new_password || new_password.length < 8) {
-      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    if (!new_password || new_password.length < 1) {
+      return res.status(400).json({ error: 'New password must be non-empty' });
     }
 
     const result = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);

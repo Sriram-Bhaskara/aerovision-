@@ -143,7 +143,7 @@ export default function AuthPage() {
               <div className="mb-5">
                 <label className="block text-[11px] text-[var(--text4)] font-mono tracking-wider uppercase mb-1.5">Password</label>
                 <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
-                  placeholder={tab === 'signup' ? '8+ characters' : 'Enter password'} required minLength={8}
+                  placeholder="Enter password" required
                   className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--text)] placeholder-[var(--text3)] outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(59,158,255,0.1)] transition-all" />
               </div>
 

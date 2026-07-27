@@ -15,7 +15,7 @@ const handleValidation = (req, res, next) => {
 // Auth validators
 const validateRegister = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('password').notEmpty().withMessage('Password required'),
   body('full_name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be 2-100 characters'),
   handleValidation,
 ];
