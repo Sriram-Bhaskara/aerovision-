@@ -24,7 +24,7 @@ function pushNotification(req, userId, type, title, message, icon) {
 // GET /api/assist/verify/status
 router.get('/verify/status', authenticateToken, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       'SELECT id, eligibility_type, document_type, document_name, status, submitted_at FROM assist_verifications WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 1',
       [req.user.id]
     );
@@ -50,7 +50,7 @@ router.post('/verify', authenticateToken, async (req, res) => {
       // Use submitted DOB or fall back to what's already on the profile
       let dob = date_of_birth;
       if (!dob) {
-        const userRow = query('SELECT date_of_birth FROM users WHERE id = ?', [req.user.id]);
+        const userRow = await query('SELECT date_of_birth FROM users WHERE id = ?', [req.user.id]);
         dob = (userRow.rows || [])[0]?.date_of_birth || null;
       }
       if (!dob) {
@@ -78,13 +78,13 @@ router.post('/verify', authenticateToken, async (req, res) => {
       }
 
       // Check if already approved
-      const existing = query(
+      const existing = await query(
         'SELECT id, eligibility_type, document_type, status FROM assist_verifications WHERE user_id = ? AND status = ? LIMIT 1',
         [req.user.id, 'approved']
       );
       if ((existing.rows || []).length > 0) return res.json({ verification: existing.rows[0] });
 
-      query(
+      await query(
         `INSERT INTO assist_verifications (user_id, eligibility_type, document_type, document_name, document_data, status)
          VALUES (?, 'senior', 'age_verified', '', '', 'approved')`,
         [req.user.id]
@@ -102,13 +102,13 @@ router.post('/verify', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Document file is required' });
     }
 
-    const existing = query(
+    const existing = await query(
       'SELECT id, eligibility_type, document_type, document_name, status FROM assist_verifications WHERE user_id = ? AND status = ? LIMIT 1',
       [req.user.id, 'approved']
     );
     if ((existing.rows || []).length > 0) return res.json({ verification: existing.rows[0] });
 
-    query(
+    await query(
       `INSERT INTO assist_verifications (user_id, eligibility_type, document_type, document_name, document_data, status)
        VALUES (?, ?, ?, ?, ?, 'approved')`,
       [req.user.id, eligibility_type, document_type, document_name || '', document_data]
@@ -136,7 +136,7 @@ router.get('/admin/bookings', authenticateToken, async (req, res) => {
     if (where.length) sql += ' WHERE ' + where.join(' AND ');
     sql += ' ORDER BY mb.created_at DESC LIMIT 200';
 
-    const result = query(sql, params);
+    const result = await query(sql, params);
     res.json({ bookings: result.rows || [] });
   } catch (err) {
     console.error('[Assist] Admin list error:', err.message);
@@ -153,11 +153,11 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
   }
 
   try {
-    const booking = query('SELECT * FROM mobility_bookings WHERE id = ?', [req.params.id]);
+    const booking = await query('SELECT * FROM mobility_bookings WHERE id = ?', [req.params.id]);
     const b = (booking.rows || [])[0];
     if (!b) return res.status(404).json({ error: 'Booking not found' });
 
-    query('UPDATE mobility_bookings SET status = ? WHERE id = ?', [status, req.params.id]);
+    await query('UPDATE mobility_bookings SET status = ? WHERE id = ?', [status, req.params.id]);
 
     const svcLabel = b.service_type === 'wheelchair' ? 'wheelchair' : 'buggy';
     const svcIcon  = b.service_type === 'wheelchair' ? '♿' : '🛺';
@@ -207,7 +207,7 @@ router.post('/book', authenticateToken, async (req, res) => {
   let payment_status = 'na';
 
   if (service_type === 'wheelchair') {
-    const verif = query(
+    const verif = await query(
       'SELECT id FROM assist_verifications WHERE user_id = ? AND status = ? LIMIT 1',
       [req.user.id, 'approved']
     );
@@ -217,7 +217,7 @@ router.post('/book', authenticateToken, async (req, res) => {
   }
 
   if (service_type === 'golf_cart') {
-    const verif = query(
+    const verif = await query(
       'SELECT id FROM assist_verifications WHERE user_id = ? AND status = ? LIMIT 1',
       [req.user.id, 'approved']
     );
@@ -241,7 +241,7 @@ router.post('/book', authenticateToken, async (req, res) => {
   const resolvedPickup = pickup_point || 'Main Entrance - T1';
 
   try {
-    query(
+    await query(
       `INSERT INTO mobility_bookings
          (booking_ref, user_id, service_type, passenger_name, phone, flight_iata, pickup_point, pickup_time, notes, status, charge_amount, payment_status)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -274,7 +274,7 @@ router.post('/book', authenticateToken, async (req, res) => {
 // GET /api/assist/my-bookings
 router.get('/my-bookings', authenticateToken, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       'SELECT * FROM mobility_bookings WHERE user_id = ? ORDER BY created_at DESC',
       [req.user.id]
     );
@@ -288,7 +288,7 @@ router.get('/my-bookings', authenticateToken, async (req, res) => {
 // DELETE /api/assist/:id
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    query('DELETE FROM mobility_bookings WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    await query('DELETE FROM mobility_bookings WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('[Assist] Delete error:', err.message);
